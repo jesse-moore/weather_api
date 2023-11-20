@@ -9,6 +9,7 @@ export default {
     format: "cjs",
     dir: `.rollup`,
   },
+  external: ['@azure/functions-core'],
   plugins: [
     typescript({
       compilerOptions: {
