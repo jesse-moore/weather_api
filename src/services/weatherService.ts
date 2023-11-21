@@ -61,7 +61,6 @@ const parseWeatherResponse = (request: IWeatherPeriodParams, weatherResponse: IV
       (block.preciptype ?? []).forEach((t) => precipTypes.add(t));
       weatherDto.cloudCover = toFixed(average(weatherDto.cloudCover, block.cloudcover ?? 0), 0);
       weatherDto.dewPoint = toFixed(average(weatherDto.dewPoint, block.dew), 1);
-      console.log(weatherDto.dewPoint, block.dew)
       weatherDto.heatIndex = block.temp > 27 ? toFixed(max(weatherDto.heatIndex, block.feelslike), 0) : undefined;
       weatherDto.humidity = toFixed(average(weatherDto.humidity, block.humidity), 0);
       weatherDto.maxTemp = toFixed(max(weatherDto.maxTemp, block.temp), 0);
