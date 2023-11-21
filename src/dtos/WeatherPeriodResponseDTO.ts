@@ -3,7 +3,7 @@ export class WeatherPeriodResponseDTO {
   dateTimeEnd: number;
   cloudCover: number;
   conditions: string[] = [];
-  icons: number[] = [];
+  icons: string[] = [];
   dewPoint?: number | null;
   heatIndex?: number | null;
   windChill?: number | null;

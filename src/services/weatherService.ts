@@ -40,7 +40,7 @@ const parseWeatherResponse = (request: IWeatherPeriodParams, weatherResponse: IV
   const weatherDto = new WeatherPeriodResponseDTO();
   const conditions = new Set<string>();
   const precipTypes = new Set<string>();
-  const icons = new Set<number>();
+  const icons = new Set<string>();
 
   const currentConditions = weatherResponse.currentConditions?.temp && weatherResponse.currentConditions;
 
@@ -57,7 +57,7 @@ const parseWeatherResponse = (request: IWeatherPeriodParams, weatherResponse: IV
         .split(",")
         .filter((c) => c)
         .forEach((c) => conditions.add(c.trim()));
-      // icons.add();
+      icons.add(block.icon);
       (block.preciptype ?? []).forEach((t) => precipTypes.add(t));
       weatherDto.cloudCover = toFixed(average(weatherDto.cloudCover, block.cloudcover ?? 0), 0);
       weatherDto.dewPoint = toFixed(average(weatherDto.dewPoint, block.dew), 1);
