@@ -136,6 +136,5 @@ export const validateCurrentWeatherQueryParams = (request: ICurrentWeatherParams
   const errors = [];
   if (!isValidLatitude(request.lat)) errors.push("lat");
   if (!isValidLongitude(request.lon)) errors.push("lon");
-  if (!isValidEpoch(request.dt)) errors.push("dt");
   return errors.length > 0 ? errors : undefined;
 };

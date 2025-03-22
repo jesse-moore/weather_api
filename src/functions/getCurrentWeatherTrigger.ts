@@ -1,16 +1,14 @@
 import { HttpRequest, HttpResponseInit } from "@azure/functions";
 import { LogLevel } from "../dtos/logDTO";
-import { IWeatherPeriodParams } from "../dtos/weatherPeriodRequestDTO";
-import { insertLog } from "../services/loggerService";
-import { getCurrentWeather, getWeatherPeriod, validateCurrentWeatherQueryParams, validateWeatherPeriodQueryParams } from "../services/weatherService";
 import { ICurrentWeatherParams } from "../interfaces";
+import { insertLog } from "../services/loggerService";
+import { getCurrentWeather, validateCurrentWeatherQueryParams } from "../services/weatherService";
 
 export async function getCurrentWeatherTrigger(request: HttpRequest): Promise<HttpResponseInit> {
   const location = request.query.get("location");
-  const dateStart = request.query.get("dateStart");
 
-  if (!location || !dateStart) {
-    const missingParams = Object.entries({ location, dateStart })
+  if (!location) {
+    const missingParams = Object.entries({ location })
       .filter((p) => !p[1])
       .map((p) => p[0])
       .join(", ");
@@ -31,7 +29,6 @@ export async function getCurrentWeatherTrigger(request: HttpRequest): Promise<Ht
   const weatherParams: ICurrentWeatherParams = {
     lat: Number(lat),
     lon: Number(lon),
-    dt: Number(dateStart),
   };
 
   const validateParamsResult = validateCurrentWeatherQueryParams(weatherParams);
