@@ -1,4 +1,4 @@
-import { PeriodOfDay } from "../dtos/WeatherPeriodResponseDTO";
+import { PeriodOfDay } from "../dtos/periodOfDayDTO";
 
 const PI = Math.PI;
 const rad = PI / 180;
@@ -15,15 +15,19 @@ const fromJulian = (j: number): Date => new Date((j + 0.5 - J1970) * dayMs);
 
 const toDays = (date: Date): number => toJulian(date) - J2000;
 
-const isWithinRange = (date1Start: number, date1End: number, date2Start: number, date2End: number): boolean => {
+const isWithinRange = (date1Start: number, date1End: number, date2Start: number, date2End: number = null): boolean => {
   if (date1Start > date1End) {
     [date1Start, date1End] = [date1End, date1Start];
   }
-  if (date2Start > date2End) {
+  if (date2End != null && date2Start > date2End) {
     [date2Start, date2End] = [date2End, date2Start];
   }
 
-  return date1Start <= date2End && date1End >= date2Start;
+  if (date2End == null) {
+    return date1Start <= date2Start && date1End >= date2Start;
+  } else {
+    return date1Start <= date2End && date1End >= date2Start;
+  }
 };
 
 const rightAscension = (l: number, b: number): number => {

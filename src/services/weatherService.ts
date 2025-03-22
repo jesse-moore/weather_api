@@ -1,39 +1,71 @@
-import { WeatherPeriodResponseDTO } from "../dtos/WeatherPeriodResponseDTO";
+import { WeatherPeriodResponseDTO } from "../dtos/weatherPeriodResponseDTO";
 import { IVisualCrossingWeatherResponseDTO } from "../dtos/visualCrossingWeatherResponseDTO";
 import { IWeatherPeriodParams } from "../dtos/weatherPeriodRequestDTO";
+import {
+  adjustEpoch,
+  average,
+  isValidEpoch,
+  isValidLatitude,
+  isValidLongitude,
+  max,
+  min,
+  toFixed,
+} from "./helpersService";
 import { calculateDayPeriodRange } from "./sunPositionService";
+import { CurrentWeatherResponseDTO } from "../dtos/currentWeatherResponseDTO";
+import { ICurrentWeatherParams } from "../interfaces";
+import { IOpenWeatherResponse } from "../interfaces/openWeatherInterfaces";
 
-const WEATHER_URI = process.env["WEATHER_URI"];
-if (!WEATHER_URI) throw new Error("Missing Weather URI");
-const WEATHER_API_KEY = process.env["WEATHER_API_KEY"];
-if (!WEATHER_API_KEY) throw new Error("Missing Weather API Key");
+const VISUAL_CROSSING_WEATHER_URI = process.env["VISUAL_CROSSING_WEATHER_URI"];
+if (!VISUAL_CROSSING_WEATHER_URI) throw new Error("Missing Visual Crossing Weather URI");
+const VISUAL_CROSSING_WEATHER_API_KEY = process.env["VISUAL_CROSSING_WEATHER_API_KEY"];
+if (!VISUAL_CROSSING_WEATHER_API_KEY) throw new Error("Missing Visual Crossing Weather API Key");
+const OPEN_WEATHER_URI = process.env["OPEN_WEATHER_URI"];
+if (!OPEN_WEATHER_URI) throw new Error("Missing Open Weather URI");
+const OPEN_WEATHER_API_KEY = process.env["OPEN_WEATHER_API_KEY"];
+if (!OPEN_WEATHER_API_KEY) throw new Error("Missing Open Weather API Key");
 
 export const getWeatherPeriod = async (request: IWeatherPeriodParams): Promise<WeatherPeriodResponseDTO> => {
-  const weatherResponse = await getWeather(request);
-  const weatherData = parseWeatherResponse(request, weatherResponse);
-  return weatherData;
-};
-
-export const getWeather = async (request: IWeatherPeriodParams): Promise<IVisualCrossingWeatherResponseDTO> => {
   const nodeQueryString = require("node:querystring");
   const queryString = nodeQueryString.stringify({
     unitGroup: "metric",
-    key: WEATHER_API_KEY,
+    key: VISUAL_CROSSING_WEATHER_API_KEY,
     include: "obs,hours,current,days",
     iconSet: "icons2",
   });
-  const url = `${WEATHER_URI}/${request.lat},${request.lon}/${request.dt}/${request.dtEnd}?${queryString}`;
+  const url = `${VISUAL_CROSSING_WEATHER_URI}/${request.lat},${request.lon}/${request.dt}/${request.dtEnd}?${queryString}`;
   const response = await fetch(url, { method: "GET" });
-  if (response.status === 200) {
-    const weatherData = (await response.json()) as IVisualCrossingWeatherResponseDTO;
-    return weatherData;
-  } else {
+  if (response.status !== 200) {
     const error = await response.text();
     throw new Error(error);
   }
+
+  const weatherResponse = (await response.json()) as IVisualCrossingWeatherResponseDTO;
+  const weatherData = parseWeatherPeriodResponse(request, weatherResponse);
+  return weatherData;
 };
 
-const parseWeatherResponse = (request: IWeatherPeriodParams, weatherResponse: IVisualCrossingWeatherResponseDTO) => {
+export const getCurrentWeather = async (request: ICurrentWeatherParams): Promise<CurrentWeatherResponseDTO> => {
+  const nodeQueryString = require("node:querystring");
+  const queryString = nodeQueryString.stringify({
+    lat: request.lat,
+    lon: request.lon,
+    appid: OPEN_WEATHER_API_KEY,
+    units: "metric",
+    exclude: "minutely,hourly",
+  });
+  const url = `${OPEN_WEATHER_URI}?${queryString}`;
+  const response = await fetch(url, { method: "GET" });
+  if (response.status !== 200) {
+    const error = await response.text();
+    throw new Error(error);
+  }
+
+  const weatherResponse = (await response.json()) as IOpenWeatherResponse;
+  return new CurrentWeatherResponseDTO(weatherResponse);
+};
+
+const parseWeatherPeriodResponse = (request: IWeatherPeriodParams, weatherResponse: IVisualCrossingWeatherResponseDTO) => {
   const startRange = adjustEpoch(request.dt, "start");
   const endRange = adjustEpoch(request.dtEnd, "end");
 
@@ -90,17 +122,7 @@ const parseWeatherResponse = (request: IWeatherPeriodParams, weatherResponse: IV
   return weatherDto;
 };
 
-function adjustEpoch(epoch: number, type: "start" | "end"): number {
-  let date = new Date(epoch * 1000);
-  if (type === "start") {
-    date.getMinutes() < 30 && date.setMinutes(-1, 0);
-  } else if (type === "end") {
-    date.getMinutes() > 30 && date.setMinutes(59, 0);
-  }
-  return date.getTime() / 1000;
-}
-
-export const validateWeatherQueryParams = (request: IWeatherPeriodParams): string[] | void => {
+export const validateWeatherPeriodQueryParams = (request: IWeatherPeriodParams): string[] | void => {
   const errors = [];
   if (!isValidLatitude(request.lat)) errors.push("lat");
   if (!isValidLongitude(request.lon)) errors.push("lon");
@@ -110,42 +132,10 @@ export const validateWeatherQueryParams = (request: IWeatherPeriodParams): strin
   return errors.length > 0 ? errors : undefined;
 };
 
-function isValidLatitude(lat: number): boolean {
-  return !Number.isNaN(lat) && lat >= -90 && lat <= 90;
-}
-
-function isValidLongitude(lon: number): boolean {
-  return !Number.isNaN(lon) && lon >= -180 && lon <= 180;
-}
-
-function isValidEpoch(epoch: number): boolean {
-  if (Number.isNaN(epoch)) return false;
-  const date = new Date(1356998400000);
-  const now = new Date();
-  return epoch >= date.getTime() / 1000 && epoch <= now.getTime() / 1000;
-}
-
-function toFixed(num: number, places: number): number {
-  return Number((num ?? 0).toFixed(places ?? 0));
-}
-
-function max(a?: number | null, b?: number | undefined): number | undefined {
-  if ((a === null || a === undefined) && (b === null || b === undefined)) return undefined;
-  if (a === null || a === undefined) return b;
-  if (b === null || b === undefined) return a;
-  return a < b ? b : a;
-}
-
-function min(a?: number | null, b?: number | undefined): number | undefined {
-  if ((a === null || a === undefined) && (b === null || b === undefined)) return undefined;
-  if (a === null || a === undefined) return b;
-  if (b === null || b === undefined) return a;
-  return a > b ? b : a;
-}
-
-function average(a?: number | null, b?: number | undefined): number | undefined {
-  if ((a === null || a === undefined) && (b === null || b === undefined)) return undefined;
-  if (a === null || a === undefined) return b;
-  if (b === null || b === undefined) return a;
-  return (a + b) / 2;
-}
+export const validateCurrentWeatherQueryParams = (request: ICurrentWeatherParams): string[] | void => {
+  const errors = [];
+  if (!isValidLatitude(request.lat)) errors.push("lat");
+  if (!isValidLongitude(request.lon)) errors.push("lon");
+  if (!isValidEpoch(request.dt)) errors.push("dt");
+  return errors.length > 0 ? errors : undefined;
+};
