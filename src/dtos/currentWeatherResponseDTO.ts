@@ -1,5 +1,5 @@
 import { IOpenWeatherResponse } from "../interfaces/openWeatherInterfaces";
-import { calculateDayPeriod, calculateDayPeriodRange } from "../services/sunPositionService";
+import { calculateDayPeriod } from "../services/sunPositionService";
 import { PeriodOfDay } from "./periodOfDayDTO";
 
 export class CurrentWeatherResponseDTO {
@@ -24,6 +24,10 @@ export class CurrentWeatherResponseDTO {
   uvi: number;
   visibility: number;
   periodOfDay: PeriodOfDay;
+  sunrise?: number;
+  sunset?: number;
+  sunriseTomorrow?: number;
+  sunsetTomorrow?: number;
 
   constructor(weatherData: IOpenWeatherResponse) {
     this.dateTime = weatherData.current.dt;
@@ -47,5 +51,9 @@ export class CurrentWeatherResponseDTO {
     this.uvi = weatherData.current.uvi;
     this.visibility = weatherData.current.visibility;
     this.periodOfDay = calculateDayPeriod(weatherData.current.dt, weatherData.lat, weatherData.lon);
+    this.sunrise = weatherData.current.sunrise;
+    this.sunset = weatherData.current.sunset;
+    this.sunriseTomorrow = weatherData.daily[1].sunrise;
+    this.sunsetTomorrow = weatherData.daily[1].sunset;
   }
 }
